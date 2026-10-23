@@ -1,7 +1,8 @@
 """Short-lived HTTPS-preview backend for a one-off iPhone microphone demo.
 
-The upstream preview must terminate HTTPS. This process listens on loopback only,
-keeps PCM and results in memory, and neither logs requests nor saves recordings.
+The upstream preview must terminate HTTPS. This process listens on loopback only.
+The original ASR reads temporary PCM WAVs (RAM-backed on the Linux demo runner),
+which are removed after each request. Requests and transcripts are not logged.
 """
 
 from __future__ import annotations
@@ -69,7 +70,7 @@ def parse_pcm_wave_bytes(body: bytes):
 
 
 class WhisperEngine:
-    """Load the same verified CPU Whisper small model once at startup."""
+    """Use giji-automemo v0.5's original PCM/VAD/Whisper implementation."""
 
     def __init__(self, model_dir: Path):
         from simple_speech_to_text.dependency_policy import ensure_no_prohibited_dependencies
@@ -79,44 +80,17 @@ class WhisperEngine:
         invalid = verify_models(model_dir)
         if invalid:
             raise RuntimeError("文字起こしモデルが不足または破損しています。")
-        import numpy as np
-        import sherpa_onnx
-        from simple_speech_to_text.audio import _make_vad, resample
-
-        self.recognizer = sherpa_onnx.OfflineRecognizer.from_whisper(
-            encoder=str(model_dir / "encoder.int8.onnx"),
-            decoder=str(model_dir / "decoder.int8.onnx"),
-            tokens=str(model_dir / "tokens.txt"),
-            language="ja", task="transcribe", num_threads=4, provider="cpu", debug=False,
-        )
-        self.vad = _make_vad(model_dir, 0.4, MAX_AUDIO_SECONDS + 5)
-        # Initialize conversion before declaring the API ready.
-        resample(np.zeros(960, dtype=np.float32), 48_000)
+        self.model_dir = Path(model_dir)
 
     def transcribe(self, samples, rate: int) -> str:
-        import numpy as np
-        from simple_speech_to_text.audio import resample
-        from simple_speech_to_text.recognition import _join_text, speech_chunks
+        from simple_speech_to_text.recognition import transcribe
 
-        samples = resample(samples, rate)
-        self.vad.reset()
-        speech_detected = False
-        # VAD only decides whether genuine speech exists. Full uploaded PCM is
-        # preserved for recognition; recordings stay in RAM for this request.
-        for start in range(0, len(samples), 512):
-            window = samples[start:start + 512]
-            self.vad.accept_waveform(np.pad(window, (0, 512 - len(window))))
-            speech_detected |= self.vad.is_speech_detected()
-        self.vad.reset()
-        if not speech_detected:
+        # Keep the browser's original sample rate. The original pipeline owns
+        # resampling, Silero segmentation, Whisper decoding and timestamps.
+        text = transcribe(samples, self.model_dir, sample_rate=rate, language="ja")
+        if not text:
             raise DemoError(422, "no_speech", "声を検出できませんでした。マイクに近づいてもう一度お試しください。")
-        texts = []
-        for chunk in speech_chunks(samples):
-            stream = self.recognizer.create_stream()
-            stream.accept_waveform(16_000, chunk)
-            self.recognizer.decode_stream(stream)
-            texts.append(stream.result.text)
-        return _join_text(texts)
+        return text
 
 
 class DemoServer(ThreadingHTTPServer):

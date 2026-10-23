@@ -38,6 +38,8 @@ jobs:
           python scripts/audit_dependencies.py --environment
       - name: Download and verify the speech models
         run: python -m simple_speech_to_text --download-model --model-dir build/models/whisper-small
+      - name: Verify the original speech pipeline with actual speech
+        run: python scripts/smoke_speech.py --model-dir build/models/whisper-small
       - name: Open this one-time HTTPS demo
         env:
           STT_DEMO_TOKEN_SHA256: ${{ inputs.token_sha256 }}

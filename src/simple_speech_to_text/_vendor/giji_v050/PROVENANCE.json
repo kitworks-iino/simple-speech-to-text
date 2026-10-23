@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/kitworks-iino/giji-automemo",
+  "tag": "v0.5.0",
+  "commit": "d5745a3152e7c022704e64d2421196892ebfbe49",
+  "files": {
+    "pipeline.py": {
+      "upstream_path": "giji/pipeline.py",
+      "sha256": "f5a000c1adf4362e5d5331daec7ce0e57b412e26c259ca3113d7d5ea812d2ad8"
+    },
+    "models.py": {
+      "upstream_path": "giji/models.py",
+      "sha256": "cf8a12061bae4fff8ea542530b731ecc04d230d04fb92899cc626fcac0ff6a09"
+    },
+    "LICENSE": {
+      "upstream_path": "LICENSE",
+      "sha256": "b5e46acd0f715f24349f54fd32697dc377c6f4dc11a35ab7845ba1f231b985b9"
+    }
+  },
+  "usage": "Pipeline._transcribe is called directly. PCM WAV ingestion, per-second resampling, Silero VAD, chunking, Whisper config and native timestamp processing are unchanged. LLM and diarization methods are not invoked."
+}

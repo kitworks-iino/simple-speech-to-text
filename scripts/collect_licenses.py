@@ -107,6 +107,19 @@ def download_notice(url: str, target: Path, expected_sha256: str) -> dict:
     return {"file": target.name, "url": url, "sha256": digest(target)}
 
 
+def collect_vendored(licenses: Path) -> dict:
+    """Keep the unchanged meeting application's license and source provenance."""
+    source = ROOT / "src" / "simple_speech_to_text" / "_vendor" / "giji_v050"
+    destination = licenses / "giji-automemo"
+    destination.mkdir(parents=True, exist_ok=True)
+    copied = []
+    for name in ("LICENSE", "PROVENANCE.json"):
+        target = destination / name
+        shutil.copy2(source / name, target)
+        copied.append({"file": name, "sha256": digest(target)})
+    return {"component": "giji-automemo", "notices": copied}
+
+
 def collect(destination: Path) -> None:
     licenses = destination / "licenses"
     licenses.mkdir(parents=True, exist_ok=True)
@@ -115,6 +128,7 @@ def collect(destination: Path) -> None:
         if generated.exists():
             shutil.rmtree(generated)
     packages = collect_python(licenses)
+    vendored = collect_vendored(licenses)
     notices = [download_notice(url, licenses / "upstream" / name, checksum)
                for name, (url, checksum) in UPSTREAM_NOTICES.items()]
     models = []
@@ -129,6 +143,7 @@ def collect(destination: Path) -> None:
         "source_commit": commit, "python": sys.version,
         "python_distributions_in_build_environment": packages,
         "upstream_notices": notices, "model_files": models,
+        "vendored_source": vendored,
         "pyproject_sha256": digest(ROOT / "pyproject.toml"),
     }
     (licenses / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",

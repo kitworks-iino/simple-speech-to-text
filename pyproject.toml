@@ -16,6 +16,7 @@ dependencies = [
   "sounddevice==0.5.3",
   "cffi==2.0.0",
   "pycparser==2.23",
+  "httpx==0.28.1",
 ]
 
 [project.optional-dependencies]
@@ -24,6 +25,9 @@ build = ["pyinstaller>=6.16,<7"]
 
 [project.scripts]
 simple-speech-to-text = "simple_speech_to_text.cli:main"
+
+[tool.setuptools.package-data]
+"simple_speech_to_text._vendor.giji_v050" = ["LICENSE", "PROVENANCE.json"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
