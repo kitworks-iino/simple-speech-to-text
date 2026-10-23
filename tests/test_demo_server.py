@@ -194,13 +194,15 @@ def test_expired_api_returns_410(running_server):
 
 
 @pytest.mark.parametrize("body", [
-    b"compressed audio",
-    pcm_wav(channels=2),
-    pcm_wav(width=1),
-    pcm_wav(rate=4000),
-    pcm_wav(seconds=30.01),
-    pcm_wav(seconds=0),
-    pcm_wav()[:-20],
+    # Pytest copies node IDs into PYTEST_CURRENT_TEST. Raw WAV representations
+    # exceed Windows' environment-variable limit and obscure the CI traceback.
+    pytest.param(b"compressed audio", id="compressed"),
+    pytest.param(pcm_wav(channels=2), id="stereo"),
+    pytest.param(pcm_wav(width=1), id="8bit"),
+    pytest.param(pcm_wav(rate=4000), id="unsupported-rate"),
+    pytest.param(pcm_wav(seconds=30.01), id="too-long"),
+    pytest.param(pcm_wav(seconds=0), id="empty"),
+    pytest.param(pcm_wav()[:-20], id="truncated"),
 ])
 def test_invalid_wav_is_rejected(body):
     with pytest.raises(demo.DemoError):
