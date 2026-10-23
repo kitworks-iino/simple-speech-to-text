@@ -87,8 +87,9 @@ py -3.13 -m venv .venv
 ## iPhoneからの一時試用
 
 開発用の`Temporary phone demo (30 minutes)`ワークフローで、一時的なHTTPSの試用ページを起動できます。
-iPhoneのSafariで共有リンクを開き、「話す」を押してマイクを許可すると、約1.2秒の無音で録音が終わり、文字が表示されます。
-1回30秒以内です。Safariを前面にしたままお試しください。
+iPhoneのSafariで共有リンクを開き、「話す」を押してマイクを許可します。
+話し終わったら「停止して文字起こし」を押してください。無音による自動停止はありません。
+一時試用は1回最大30秒で終了します。Safariを前面にしたままお試しください。
 
 この試用では、SafariのAudioWorkletで取得したPCMを、Cloudflare Quick Tunnel経由で
 GitHub Actionsの一時サーバーへ送り、PC版と同じWhisper smallで処理します。

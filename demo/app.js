@@ -12,8 +12,7 @@ if (location.hash) history.replaceState(null, "", location.pathname + location.s
 
 let phase = "connecting", ready = false, generation = 0;
 let context, stream, source, worklet, recordingTimer, flushDone, controller;
-let chunks = [], frames = 0, speechSeconds = 0, quietSeconds = 0, heardSpeech = false;
-let noiseFloor = 0.003, sampleRate = 0;
+let chunks = [], frames = 0, sampleRate = 0;
 
 function show(message, state = phase) {
   phase = state;
@@ -85,30 +84,15 @@ function acceptSamples(samples, run) {
   chunks.push(block);
   frames += block.length;
   if (phase !== "recording") return;
-  let energy = 0;
-  for (const sample of block) energy += sample * sample;
-  const rms = Math.sqrt(energy / block.length);
-  const duration = block.length / sampleRate;
-  const threshold = Math.max(0.012, Math.min(0.045, noiseFloor * 3));
-  if (rms >= threshold) {
-    speechSeconds += duration;
-    quietSeconds = 0;
-    if (speechSeconds >= 0.2) heardSpeech = true;
-  } else {
-    noiseFloor = 0.97 * noiseFloor + 0.03 * Math.min(rms, 0.015);
-    quietSeconds += duration;
-    if (!heardSpeech && quietSeconds > 0.12) speechSeconds = 0;
-  }
-  if (heardSpeech && quietSeconds >= 1.2) void finish(run);
-  else if (!heardSpeech && frames / sampleRate >= 15) cancel("声を検出できませんでした。もう一度「話す」を押してください。");
-  else if (frames >= 30 * sampleRate) void finish(run);
+  // Silence never ends recording. Only the stop button or the explicit
+  // temporary-demo duration limit completes this capture.
+  if (frames >= 30 * sampleRate) void finish(run);
 }
 
 async function begin() {
   if (!ready || phase !== "idle") return;
   const run = ++generation;
-  chunks = []; frames = 0; speechSeconds = 0; quietSeconds = 0;
-  heardSpeech = false; noiseFloor = 0.003;
+  chunks = []; frames = 0;
   show("マイクを準備しています…", "preparing");
   try {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -143,7 +127,7 @@ async function begin() {
     for (const track of stream.getTracks()) track.addEventListener("ended", () => {
       if (run === generation && phase === "recording") cancel("マイクの接続が切れました。もう一度お試しください。");
     });
-    show("話してください。少し黙ると自動で終了します。", "recording");
+    show("録音中です。話し終わったら「停止して文字起こし」を押してください。", "recording");
     recordingTimer = setTimeout(() => { if (run === generation) void finish(run); }, 30000);
   } catch (error) {
     if (run === generation) cancel(errorMessage(error));
