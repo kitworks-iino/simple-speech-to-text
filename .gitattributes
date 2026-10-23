@@ -1,0 +1,2 @@
+# Preserve the pinned upstream bytes even when Git's core.autocrlf is enabled.
+src/simple_speech_to_text/_vendor/giji_v050/* text eol=lf
