@@ -84,6 +84,26 @@ py -3.13 -m venv .venv
 利用可能な入力デバイスがないときは、マイクの接続・Windowsの入力設定・マイクの利用許可を確認してください。
 このアプリは会議アプリとの連携、システム音声の録音、話者分離、要約を行いません。
 
+## iPhoneからの一時試用
+
+開発用の`Temporary phone demo (30 minutes)`ワークフローで、一時的なHTTPSの試用ページを起動できます。
+iPhoneのSafariで共有リンクを開き、「話す」を押してマイクを許可すると、約1.2秒の無音で録音が終わり、文字が表示されます。
+1回30秒以内です。Safariを前面にしたままお試しください。
+
+この試用では、SafariのAudioWorkletで取得したPCMを、Cloudflare Quick Tunnel経由で
+GitHub Actionsの一時サーバーへ送り、PC版と同じWhisper smallで処理します。
+**iPhone内だけで推論する機能ではありません。** 音声・文字をファイルやアクセスログへ保存せず、
+サーバーとトンネルは約30分で停止します。常設サービスは作成しません。
+
+起動者は十分に長いランダムな接続トークンを用意し、そのSHA-256だけを`token_sha256`入力へ渡します。
+接続先はワークフローの`temporary-demo-connection-*`成果物で取得し、
+`https://接続先/#t=接続トークン`の形で試用者に共有します。トークンそのものを
+GitHubの入力・ログ・ソースへ記載しないでください。画面はURL断片を読み取って除去し、
+APIにはAuthorizationヘッダーで渡します。有効期限後はリンクを使用できません。
+
+画面とサーバーのコードは[`demo/`](demo/)と[`scripts/demo_server.py`](scripts/demo_server.py)にあります。
+Windows用ZIPは、ローカルで動くコンソールアプリのみを同梱します。
+
 ## 開発・検証
 
 ```powershell

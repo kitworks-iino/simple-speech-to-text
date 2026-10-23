@@ -1,0 +1,56 @@
+name: Temporary phone demo (30 minutes)
+
+on:
+  workflow_dispatch:
+    inputs:
+      token_sha256:
+        description: SHA256 digest of a random 256-bit bearer token (never enter the token itself)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temporary-phone-demo
+  cancel-in-progress: true
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          architecture: x64
+          cache: pip
+      - name: Install the local recognition runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libportaudio2
+          python -m pip install .
+          python scripts/audit_dependencies.py --environment
+      - name: Download and verify the speech models
+        run: python -m simple_speech_to_text --download-model --model-dir build/models/whisper-small
+      - name: Open this one-time HTTPS demo
+        env:
+          STT_DEMO_TOKEN_SHA256: ${{ inputs.token_sha256 }}
+        run: python scripts/run_demo.py start
+      - name: Share the connection details without the access token
+        uses: actions/upload-artifact@v4
+        with:
+          name: temporary-demo-connection-${{ github.run_id }}
+          path: build/demo/connection.json
+          retention-days: 1
+          if-no-files-found: error
+      - name: Keep this demo open for at most 30 minutes
+        run: python scripts/run_demo.py hold
+      - name: Close the temporary demo
+        if: always()
+        run: python scripts/run_demo.py stop

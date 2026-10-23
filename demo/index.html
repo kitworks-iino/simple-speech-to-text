@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#f4f5f9">
+  <title>喋って、文字に。</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">SIMPLE SPEECH TO TEXT · 一時試用</p>
+    <h1>喋って、文字に。</h1>
+    <p class="intro">ボタンを押して話す。少し黙ると、文字になります。</p>
+    <section class="recorder" aria-label="録音">
+      <div class="status-line"><span id="indicator" aria-hidden="true"></span><p id="status" role="status" aria-live="polite">接続を確認しています…</p></div>
+      <button id="speak" type="button" disabled>話す</button>
+      <button id="stop" class="secondary" type="button" hidden>終了して文字起こし</button>
+      <p id="hint" class="hint">マイクの利用を許可してください。1回最大30秒です。</p>
+    </section>
+    <section class="result" aria-label="文字起こし結果">
+      <div class="result-heading"><label for="transcript">文字起こし</label><button id="copy" class="copy" type="button" disabled>コピー</button></div>
+      <textarea id="transcript" readonly placeholder="ここに文字が表示されます。" aria-label="文字起こし結果"></textarea>
+    </section>
+    <p class="privacy">一時試用・音声は一時サーバーで処理し保存しません。</p>
+    <p class="footnote">Whisper small / ONNX · FFmpeg不使用<br>このページを閉じるか別の画面に移ると録音を中止します。</p>
+  </main>
+</body>
+</html>
