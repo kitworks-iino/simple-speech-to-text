@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "simple-speech-to-text"
+version = "0.1.0"
+description = "Speak, pause, get text. Local Japanese speech recognition without FFmpeg."
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+license = "MIT"
+dependencies = [
+  "numpy==2.3.5",
+  "scipy==1.16.3",
+  "sherpa-onnx==1.13.8",
+  "sounddevice==0.5.3",
+  "cffi==2.0.0",
+  "pycparser==2.23",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10", "ruff>=0.11,<1"]
+build = ["pyinstaller>=6.16,<7"]
+
+[project.scripts]
+simple-speech-to-text = "simple_speech_to_text.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]

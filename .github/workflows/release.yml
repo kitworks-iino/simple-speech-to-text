@@ -1,0 +1,70 @@
+name: Windows portable release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: portable-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  portable:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          architecture: x64
+          cache: pip
+      - name: Install pinned application and build dependencies
+        run: |
+          python -m pip install -e ".[dev,build]"
+          if ($LASTEXITCODE -ne 0) { throw "Installation failed." }
+      - name: Test the release source
+        run: |
+          python -m ruff check .
+          if ($LASTEXITCODE -ne 0) { throw "Lint failed." }
+          python -m pytest -q
+          if ($LASTEXITCODE -ne 0) { throw "Tests failed." }
+      - name: Build and audit ZIP, test extracted executable and bundled models
+        shell: pwsh
+        run: ./scripts/build-portable.ps1
+      - name: Preserve tested artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: simple-speech-to-text-windows-${{ github.run_id }}
+          path: |
+            dist/simple-speech-to-text-windows-x64.zip
+            dist/SHA256SUMS.txt
+          compression-level: 0
+          retention-days: 7
+      - name: Publish verified tag release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: pwsh
+        run: |
+          if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') { throw "Invalid release tag." }
+          $Version = python -c "from importlib.metadata import version; print(version('simple-speech-to-text'))"
+          if ($LASTEXITCODE -ne 0 -or $env:RELEASE_TAG -ne "v$Version") { throw "Package version differs from tag." }
+          $TagCommit = git rev-parse "$($env:RELEASE_TAG)^{commit}"
+          $BuildCommit = git rev-parse HEAD
+          if ($TagCommit -ne $BuildCommit) { throw "Tag differs from tested commit." }
+          gh release create $env:RELEASE_TAG dist/simple-speech-to-text-windows-x64.zip dist/SHA256SUMS.txt --verify-tag --title "Simple Speech to Text $env:RELEASE_TAG" --notes-file .github/release-notes.md
+          if ($LASTEXITCODE -ne 0) { throw "Release creation failed." }
